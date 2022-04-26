@@ -1,2 +1,4 @@
 # CS375-FinalProject
-Repo for CS375 Final Project
+
+**Link for RFC 3501 - IMAP**
+https://datatracker.ietf.org/doc/html/rfc3501#page-4 
