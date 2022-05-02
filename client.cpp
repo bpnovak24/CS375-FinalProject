@@ -11,12 +11,13 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-
 #include <arpa/inet.h>
+#include <termios.h>
 
-#define PORT "3490" // the port client will be connecting to
+#define PORT "143" // the port client will be connecting to
 
-#define MAXDATASIZE 100 // max number of bytes we can get at once
+#define MAXDATASIZE 500 // max number of bytes we can get at once
+
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -30,14 +31,14 @@ void *get_in_addr(struct sockaddr *sa)
 
 int main(int argc, char *argv[])
 {
-	int sockfd, numbytes;
+	int sockfd, numbytes, new_fd;
 	char buf[MAXDATASIZE];
 	struct addrinfo hints, *servinfo, *p;
 	int rv;
 	char s[INET6_ADDRSTRLEN];
 
 	if (argc != 2) {
-	    fprintf(stderr,"usage: client hostname\n");
+	    fprintf(stderr,"Need destination name\n");
 	    exit(1);
 	}
 
@@ -54,12 +55,12 @@ int main(int argc, char *argv[])
 	for(p = servinfo; p != NULL; p = p->ai_next) {
 		if ((sockfd = socket(p->ai_family, p->ai_socktype,
 				p->ai_protocol)) == -1) {
-			perror("client: socket");
+			perror("Client: socket");
 			continue;
 		}
 
 		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-			perror("client: connect");
+			perror("Client: connect");
 			close(sockfd);
 			continue;
 		}
@@ -68,24 +69,73 @@ int main(int argc, char *argv[])
 	}
 
 	if (p == NULL) {
-		fprintf(stderr, "client: failed to connect\n");
+		fprintf(stderr, "Client: failed to connect\n");
 		return 2;
 	}
 
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
 			s, sizeof s);
-	printf("client: connecting to %s\n", s);
+	printf("Client: connecting to %s\n", s);
 
 	freeaddrinfo(servinfo); // all done with this structure
 
-	if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+	// if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+	//     perror("recv");
+	//     exit(1);
+	// }
+
+	//buf[numbytes] = '\0';
+
+	//printf("Client: received '%s'\n",buf);
+	char password[100];
+	char response[150];
+	printf("Please enter your Denison username: ");
+	fgets(buf, MAXDATASIZE, stdin);
+	printf("Enter password: ");
+
+	//hide password from terminal
+	struct termios term;
+	tcgetattr(fileno(stdin), &term);
+	term.c_lflag &= ~ECHO;
+	tcsetattr(fileno(stdin), 0, &term);
+	fgets(password, 100, stdin);
+	term.c_lflag |= ECHO;
+	tcsetattr(fileno(stdin), 0, &term);
+	printf("\n");
+	//command tag -> tag
+
+	//make email
+	char domain[23]  = "@rogue1.cs.denison.edu";
+	char mail[MAXDATASIZE] = "tag AUTHENTICATE ";
+	buf[strcspn(buf,"\n")] = 0;
+	strncat(buf, domain, 23);
+	strncat(mail, buf, MAXDATASIZE);
+	strncat(mail, password, 100);
+
+	//printf("email: %s\n", mail);
+
+	if (send(sockfd, mail, sizeof mail, 0) == -1)
+		perror("send");
+
+	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
 	    perror("recv");
 	    exit(1);
 	}
+	printf("%s\n", response);
 
-	buf[numbytes] = '\0';
+	printf("Checking mailbox\n");
 
-	printf("client: received '%s'\n",buf);
+	//look at emails
+	char command[34] = "tag SELECT \"/var/mail/strasb_o1\"";
+	if (send(sockfd, command, sizeof command, 0) == -1)
+		perror("send");
+
+	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
+	    perror("recv");
+	    exit(1);
+	}
+	printf("%s\n", response);
+
 
 	close(sockfd);
 
