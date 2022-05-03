@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
 	//printf("Client: received '%s'\n",buf);
 	char password[100];
-	char response[150];
+	char response[500];
 	printf("Please enter your Denison username: ");
 	fgets(buf, MAXDATASIZE, stdin);
 	printf("Enter password: ");
@@ -105,32 +105,42 @@ int main(int argc, char *argv[])
 	//command tag -> tag
 
 	//make email
-	char domain[23]  = "@rogue1.cs.denison.edu";
-	char mail[MAXDATASIZE] = "tag AUTHENTICATE ";
+	//char domain[24]  = "@rogue1.cs.denison.edu ";
+	char mail[MAXDATASIZE] = "tag LOGIN ";
 	buf[strcspn(buf,"\n")] = 0;
-	strncat(buf, domain, 23);
+	strncat(buf, " ", 23);
 	strncat(mail, buf, MAXDATASIZE);
 	strncat(mail, password, 100);
 
-	//printf("email: %s\n", mail);
+	//printf("mail: %s\n", mail);
 
 	if (send(sockfd, mail, sizeof mail, 0) == -1)
 		perror("send");
-
 	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
 	    perror("recv");
 	    exit(1);
 	}
 	printf("%s\n", response);
+	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
+			perror("recv");
+			exit(1);
+	}
+	printf("%s\n\n\n\n", response);
 
-	printf("Checking mailbox\n");
+	//printf("Checking mailbox\n");
 
 	//look at emails
-	char command[34] = "tag SELECT \"/var/mail/strasb_o1\"";
+	//char command[10] = "tag1 NOOP";
+	char command[18] = "tag1 SELECT INBOX";
+	printf("%s\n\n", command);
 	if (send(sockfd, command, sizeof command, 0) == -1)
 		perror("send");
-
-	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
+	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1){
+	    perror("recv");
+	    exit(1);
+	}
+	printf("%s\n", response);
+	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1){
 	    perror("recv");
 	    exit(1);
 	}
