@@ -132,25 +132,26 @@ void ViewMessages(int sockfd){
 			perror("recv");
 			exit(1);
 	}
-	//cout << response << endl;
+
 	//Fix formatting in response
 	string res = response;
-	//cout << "response START:" << res << "Response STOP\n"<< endl;
+	//cout << res << endl;
 	smatch m;
-	regex regexp("\\*\\s(\\d).*\n(Subject:(.*)\n)?Date:\\s(.*)\nFrom:\\s(.*)");
+	regex regexp(":(.*)");//\*\s(\d).*\n(Subject:(.*)\n)?Date:\s(.*)\nFrom:\s(.*)\s*\)
 	int i = 1;
+	int index = 1;
+	cout << index << " ";
 	string match;
-	if (regex_search(res, m, regexp) == 1){
-		printf("Regex worked\n");
-	}
-	cout << m[1] << endl;
 	while (regex_search(res, m, regexp)){
 		match = m.str();
 		match.erase(0,1);
 		std::cout << match << "    ";
     res = m.suffix().str();
-		if (i % 4 == 0){
+		if (i % 3 == 0){
 			printf("\n");
+			index++;
+			if (regex_search(res, m, regexp) == 1)
+				cout << index << " ";
 		}
 		i++;
 	 }
@@ -317,7 +318,7 @@ void SearchSender(int sockfd){
 void SearchDate(int sockfd){
 	char response[1000];
 	int numbytes;
-	printf("\nWhich date would you like to see emails from? Use format DD-First 3 letters of month-YYYY\n\nResponse: ");
+	printf("\nWhich date would you like to see emails from? Use format shown below. Note: Month is always three letters.\nExample: 05-Apr-2022 (DD-MMM-YYYY)\n\nResponse: ");
 	char user_input[100];
 	fgets(user_input, 100, stdin);
 	printf("\n");
@@ -395,6 +396,7 @@ void initializeMailbox(int sockfd){
 			perror("recv");
 			exit(1);
 	}
+
 
 	//login
 	printf("Please enter your Denison username: ");
