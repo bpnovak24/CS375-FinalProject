@@ -19,6 +19,9 @@
 
 #define MAXDATASIZE 500 // max number of bytes we can get at once
 
+void initializeMailbox(int sockfd);
+void ViewMessages(int sockfd);
+void ReadMessage(int sockfd);
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -28,82 +31,6 @@ void *get_in_addr(struct sockaddr *sa)
 	}
 
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
-
-void initializeMailbox(int sockfd)
-{
-	char password[100];
-	char username[100];
-	char response[500];
-	int numbytes;
-	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
-			perror("recv");
-			exit(1);
-	}
-	printf("\n%s\n", response);
-
-	//printf("Client: received '%s'\n",buf);
-	printf("Please enter your Denison username: ");
-	fgets(username, MAXDATASIZE, stdin);
-	printf("Enter password: ");
-
-	//hide password from terminal
-	struct termios term;
-	tcgetattr(fileno(stdin), &term);
-	term.c_lflag &= ~ECHO;
-	tcsetattr(fileno(stdin), 0, &term);
-	fgets(password, 100, stdin);
-	term.c_lflag |= ECHO;
-	tcsetattr(fileno(stdin), 0, &term);
-	printf("\n");
-	//command tag -> tag
-
-	//make email
-	//char domain[24]  = "@rogue1.cs.denison.edu ";
-	char mail[MAXDATASIZE] = "tag1 LOGIN ";
-	username[strcspn(username,"\n")] = 0;
-	//password[strcspn(password,"\n")] = 0;
-	strncat(username, " ", 23);
-	strncat(mail, username, MAXDATASIZE);
-	strncat(mail, password, 100);
-
-	printf("mail: %ld\n", strlen(mail));
-
-	if (send(sockfd, mail, sizeof mail, 0) == -1)
-		perror("send");
-	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
-	    perror("recv");
-	    exit(1);
-	}
-	printf("\n%s\n", response);
-
-	//look at emails
-	char command[MAXDATASIZE] = "tag2 SELECT INBOX\n";
-	//char command[MAXDATASIZE] = "tag2 SEARCH ALL";
-	if (send(sockfd, command, sizeof command, 0) == -1)
-		perror("send");
-	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1){
-	    perror("recv");
-	    exit(1);
-	}
-	printf("\n%s\n", response);
-}
-
-void ViewMessages(int sockfd, int tag){
-	char response[500];
-	int numbytes;
-
-	char command[MAXDATASIZE] = " SEARCH ALL\n";
-	char char_tag[MAXDATASIZE];
-	//itoa(tag, char_tag);
-	sprintf(char_tag,"%d",tag);
-	strncat(char_tag, command, MAXDATASIZE);
-	printf("\%s\n",char_tag);
-	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
-			perror("recv");
-			exit(1);
-	}
-	printf("\n%s\n", response);
 }
 
 int main(int argc, char* argv[])
@@ -158,27 +85,117 @@ int main(int argc, char* argv[])
 	freeaddrinfo(servinfo);
 /* ====================================================================== */
 	initializeMailbox(sockfd);
-	int tag= 0;
 
-
-	char options_menu[500] = "Please select a number or Type \"EXIT\" to quit.\n\n 1. View All Message\n";
+	char options_menu[500] = "Please select a number or Type \"EXIT\" to quit.\n\n 1. View All Messages\n 2. Read an Email\n Response: ";
 	char user_input[100];
 	printf("%s", options_menu);
 	fgets(user_input, 100, stdin);
 	while (strncmp(user_input, "EXIT\n",6) != 0){
-		tag++; // automatically increment tag for each command,
-					// each function should have tag as input
-		printf("into while\n");
 		if (strncmp(user_input, "1\n",3) == 0){
-			printf("into if\n");
-			ViewMessages(sockfd, tag);
+			ViewMessages(sockfd);
+		}
+		else if (strncmp(user_input, "2\n",3) == 0){
+			ReadMessage(sockfd);
 		}
 		else{
-			printf("compare did not work\n");
+			printf("Not an eligible option. Please choose 1-5 or EXIT\n");
 		}
+		printf("%s", options_menu);
 		fgets(user_input, 100, stdin);
 	}
 
 	close(sockfd);
 	return 0;
+}
+
+void ReadMessage(int sockfd){
+	char response[1000];
+	int numbytes;
+	printf("Which email would like to read? Please enter the number associated with the email.\n Response: ");
+	char user_input[100];
+	fgets(user_input, 100, stdin);
+	user_input[strcspn(user_input,"\n")] = 0;
+	char command[MAXDATASIZE] = "tag4 FETCH ";
+	char command1[MAXDATASIZE] = " BODY[TEXT]\n";
+	strncat(command, user_input, MAXDATASIZE);
+	strncat(command, command1, MAXDATASIZE);
+	printf("Command: %s", command);
+	if (send(sockfd, command, sizeof command, 0) == -1)
+		perror("send");
+	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
+			perror("recv");
+			exit(1);
+	}
+	printf("\n%s\n", response);
+}
+
+void ViewMessages(int sockfd){
+	char response[1000];
+	int numbytes;
+	char command[MAXDATASIZE] = "tag3 FETCH 1:* (BODY[HEADER.FIELDS (To Subject Date From)])\n";
+	if (send(sockfd, command, sizeof command, 0) == -1)
+		perror("send");
+	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
+			perror("recv");
+			exit(1);
+	}
+	printf("\n%s\n", response);
+ }
+
+
+void initializeMailbox(int sockfd)
+{
+	char password[100];
+	char username[100];
+	char response[500];
+	int numbytes;
+	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
+			perror("recv");
+			exit(1);
+	}
+	printf("\n%s\n", response);
+
+	//printf("Client: received '%s'\n",buf);
+	printf("Please enter your Denison username: ");
+	fgets(username, MAXDATASIZE, stdin);
+	printf("Enter password: ");
+
+	//hide password from terminal
+	struct termios term;
+	tcgetattr(fileno(stdin), &term);
+	term.c_lflag &= ~ECHO;
+	tcsetattr(fileno(stdin), 0, &term);
+	fgets(password, 100, stdin);
+	term.c_lflag |= ECHO;
+	tcsetattr(fileno(stdin), 0, &term);
+	printf("\n");
+	//command tag -> tag
+
+	//make email
+	//char domain[24]  = "@rogue1.cs.denison.edu ";
+	char mail[MAXDATASIZE] = "tag1 LOGIN ";
+	username[strcspn(username,"\n")] = 0;
+	//password[strcspn(password,"\n")] = 0;
+	strncat(username, " ", 23);
+	strncat(mail, username, MAXDATASIZE);
+	strncat(mail, password, 100);
+
+	if (send(sockfd, mail, sizeof mail, 0) == -1)
+		perror("send");
+	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
+	    perror("recv");
+	    exit(1);
+	}
+	printf("\n%s\n", response);
+
+	//look at emails
+	char command[MAXDATASIZE] = "tag2 SELECT INBOX EXISTS\n";
+	//char command[MAXDATASIZE] = "tag2 SEARCH ALL";
+	if (send(sockfd, command, sizeof command, 0) == -1)
+		perror("send");
+	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1){
+	    perror("recv");
+	    exit(1);
+	}
+	printf("%s\n", response);
 }
