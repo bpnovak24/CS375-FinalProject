@@ -14,6 +14,9 @@
 #include <iostream>
 #include <arpa/inet.h>
 #include <termios.h>
+#include <regex>
+
+using namespace std;
 
 #define PORT "143" // the port client will be connecting to
 
@@ -131,15 +134,27 @@ void ReadMessage(int sockfd){
 
 void ViewMessages(int sockfd){
 	char response[1000];
+	string res;
+	smatch m;
 	int numbytes;
-	char command[MAXDATASIZE] = "tag3 FETCH 1:* (BODY[HEADER.FIELDS (To Subject Date From)])\n";
+	char command[MAXDATASIZE] = "tag3 FETCH 1:* (ENVELOPE)\n";//fetch 1 to n
+	//char command[MAXDATASIZE] = "tag3 FETCH 1:* (BODY[HEADER.FIELDS (To Subject Date From)])\n";
+
 	if (send(sockfd, command, sizeof command, 0) == -1)
 		perror("send");
 	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
 			perror("recv");
 			exit(1);
 	}
+	res = *response;
+
+
 	printf("\n%s\n", response);
+
+	regex regexp("\"(.*?)\"");
+	regex_search(&res, m, regexp);
+	printf("New messages\n");
+	printf("\n%s\n", m);
  }
 
 
