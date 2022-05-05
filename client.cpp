@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
 /* ====================================================================== */
 	initializeMailbox(sockfd);
 
-	char options_menu[500] = "Please select a number or Type \"EXIT\" to quit.\n\n 1. View All Messages\n 2. Read an Email\n Response: ";
+	char options_menu[500] = "\nPlease select a number or Type \"EXIT\" to quit.\n\n 1. View All Messages\n 2. Read an Email\n Response: ";
 	char user_input[100];
 	printf("%s", options_menu);
 	fgets(user_input, 100, stdin);
@@ -133,12 +133,10 @@ void ReadMessage(int sockfd){
 }
 
 void ViewMessages(int sockfd){
-	char response[1000];
-	string res;
-	smatch m;
+	char response[3000];
 	int numbytes;
-	char command[MAXDATASIZE] = "tag3 FETCH 1:* (ENVELOPE)\n";//fetch 1 to n
-	//char command[MAXDATASIZE] = "tag3 FETCH 1:* (BODY[HEADER.FIELDS (To Subject Date From)])\n";
+	//char command[MAXDATASIZE] = "tag3 FETCH 1:* (ENVELOPE)\n";//fetch 1 to n
+	char command[MAXDATASIZE] = "tag3 FETCH 1:* (BODY[HEADER.FIELDS (From Subject Date)])\n";
 
 	if (send(sockfd, command, sizeof command, 0) == -1)
 		perror("send");
@@ -146,16 +144,27 @@ void ViewMessages(int sockfd){
 			perror("recv");
 			exit(1);
 	}
-	res = *response;
-
-
-	printf("\n%s\n", response);
-
-	regex regexp("\"(.*?)\"");
-	regex_search(&res, m, regexp);
-	printf("New messages\n");
-	printf("\n%s\n", m);
- }
+	string res = response;
+	cout << res << endl;
+	smatch m;
+	regex regexp(":(.*)");
+	int i = 1;
+	int index = 1;
+	cout << index << " ";
+	string match;
+	while (regex_search(res, m, regexp)){
+		match = m.str();
+		match.erase(0,2);
+		std::cout << match << "    ";
+    res = m.suffix().str();
+		if (i % 3 == 0){
+			printf("\n");
+			index++;
+			cout << index << " ";
+		}
+		i++;
+	 }
+  }
 
 
 void initializeMailbox(int sockfd)
