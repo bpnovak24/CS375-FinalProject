@@ -118,23 +118,49 @@ int main(int argc, char* argv[])
 void ReadMessage(int sockfd){
 	char response[1000];
 	int numbytes;
-	printf("Which email would like to read? Please enter the number associated with the email.\n Response: ");
+	printf("\nWhich email would like to read? Please enter the number associated with the email.\n\n Response: ");
 	char user_input[100];
 	fgets(user_input, 100, stdin);
+	printf("\n");
 	user_input[strcspn(user_input,"\n")] = 0;
-	char command[MAXDATASIZE] = "tag4 FETCH ";
-	char command1[MAXDATASIZE] = " BODY[TEXT]\n";
-	strncat(command, user_input, MAXDATASIZE);
-	strncat(command, command1, MAXDATASIZE);
-	printf("Command: %s", command);
-	if (send(sockfd, command, sizeof command, 0) == -1)
-		perror("send");
+	char command1[MAXDATASIZE] = " BODY[HEADER.FIELDS (From Subject Date)]\n";
+	char command2[MAXDATASIZE] = " BODY[TEXT]\n";
+	char header_command[MAXDATASIZE] = "tag4 FETCH ";
+	char text_command[MAXDATASIZE] = "tag4 FETCH ";
+	strncat(header_command, user_input, MAXDATASIZE);
+	strncat(header_command, command1, MAXDATASIZE);
+	if (send(sockfd, header_command, sizeof header_command, 0) == -1)
+	  perror("send");
 	if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
-			perror("recv");
-			exit(1);
+	    perror("recv");
+	    exit(1);
 	}
-	printf("\n%s\n", response);
-	memset(response, 0, sizeof response);
+	//printf("response: %s\n", response);
+	string res = response;
+	smatch m;
+	regex regexp("(.*:(.*))");
+
+	while (regex_search(res, m, regexp)){
+	  //match = m.str();
+	  std::cout << m.str() << endl;;
+	  res = m.suffix().str();
+	 }
+
+	 strncat(text_command, user_input, MAXDATASIZE);
+	 strncat(text_command, command2, MAXDATASIZE);
+	 char response2[1000];
+	 if (send(sockfd, text_command, sizeof text_command, 0) == -1)
+	   perror("send");
+	 if ((numbytes = recv(sockfd, response2, sizeof response2, 0)) == -1) {
+	     perror("recv");
+	     exit(1);
+	 }
+	//printf("response: %s\n", response2);
+
+	res = response2;
+	regex regexp2("\n(.*)");
+	regex_search(res, m, regexp2);
+	cout << m[1] << endl;
 }
 
 
