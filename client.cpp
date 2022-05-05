@@ -25,6 +25,7 @@ using namespace std;
 void initializeMailbox(int sockfd);
 void ViewMessages(int sockfd);
 void ReadMessage(int sockfd);
+void DeleteMessage(int sockfd);
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -89,7 +90,7 @@ int main(int argc, char* argv[])
 /* ====================================================================== */
 	initializeMailbox(sockfd);
 
-	char options_menu[500] = "\nPlease select a number or Type \"EXIT\" to quit.\n\n 1. View All Messages\n 2. Read an Email\n Response: ";
+	char options_menu[500] = "\nPlease select a number or Type \"EXIT\" to quit.\n\n 1. View All Messages\n 2. Read an Email\n 3. Delete an Email\n Response: ";
 	char user_input[100];
 	printf("%s", options_menu);
 	fgets(user_input, 100, stdin);
@@ -99,6 +100,9 @@ int main(int argc, char* argv[])
 		}
 		else if (strncmp(user_input, "2\n",3) == 0){
 			ReadMessage(sockfd);
+		}
+		else if (strncmp(user_input, "3\n",3) == 0){
+			DeleteMessage(sockfd);
 		}
 		else{
 			printf("Not an eligible option. Please choose 1-5 or EXIT\n");
@@ -130,7 +134,42 @@ void ReadMessage(int sockfd){
 			exit(1);
 	}
 	printf("\n%s\n", response);
+	memset(response, 0, sizeof response);
 }
+
+
+void DeleteMessage(int sockfd){
+		char response[3000];
+		int numbytes;
+		//char command[MAXDATASIZE] = "tag3 FETCH 1:* (ENVELOPE)\n";//fetch 1 to n
+
+		printf("Which email would like to delete? Please enter the number associated with the email.\n Response: ");
+		char user_input[100];
+		fgets(user_input, 100, stdin);
+		user_input[strcspn(user_input,"\n")] = 0;
+
+		// char command[MAXDATASIZE] = "tag5 FETCH ";
+		// char command1[MAXDATASIZE] = " FLAGS\n";
+		char command[MAXDATASIZE] = "tag5 STORE ";
+		char command1[MAXDATASIZE] = " FLAGS (\\Deleted)\n";
+		strncat(command, user_input, MAXDATASIZE);
+		strncat(command, command1, MAXDATASIZE);
+		//printf("Command: %s", command);
+		if (send(sockfd, command, sizeof command, 0) == -1)
+			perror("send");
+
+		char command3[14] = "tag5 EXPUNGE\n";
+		if (send(sockfd, command3, sizeof command, 0) == -1)
+			perror("send");
+		if ((numbytes = recv(sockfd, response, sizeof response, 0)) == -1) {
+				perror("recv");
+				exit(1);
+		}
+		printf("\n%s\n", response);
+		memset(response, 0, sizeof response);
+
+}
+
 
 void ViewMessages(int sockfd){
 	char response[3000];
@@ -164,8 +203,8 @@ void ViewMessages(int sockfd){
 		}
 		i++;
 	 }
+	 memset(response, 0, sizeof response);
   }
-
 
 void initializeMailbox(int sockfd)
 {
