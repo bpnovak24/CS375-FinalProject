@@ -236,7 +236,21 @@ void DeleteMessage(int sockfd){
 				perror("recv");
 				exit(1);
 		}
-		printf("\nEmail %s deleted\n", user_input);
+		//printf("response: %s", response);
+		// printf("\nEmail %s deleted\n", user_input);
+
+		string res = response;
+		smatch m;
+		regex regexp("OK Expunge completed");
+		if (regex_search(res, m, regexp) == 1){
+			printf("\nDeletion Successful\n\n");
+			exit(1);
+		}
+		else{
+			printf("\nDeletion Unsuccessful\n\n");
+		}
+
+
 		memset(response, 0, sizeof response);
 
 }
