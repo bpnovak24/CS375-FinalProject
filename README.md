@@ -1,4 +1,4 @@
-# IMAP Email Client Prokect
+# IMAP Email Client Project
 ## CS 375 - Computer Networking Final Project
 
 ### Olivia Strasburg and Brandon Novak
