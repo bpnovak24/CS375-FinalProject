@@ -145,7 +145,7 @@ void ViewMessages(int sockfd){
 			exit(1);
 	}
 	string res = response;
-	cout << res << endl;
+	//cout << res << endl;
 	smatch m;
 	regex regexp(":(.*)");
 	int i = 1;
@@ -177,7 +177,7 @@ void initializeMailbox(int sockfd)
 			perror("recv");
 			exit(1);
 	}
-	printf("\n%s\n", response);
+	//printf("\n%s\n", response);
 
 	//printf("Client: received '%s'\n",buf);
 	printf("Please enter your Denison username: ");
@@ -210,7 +210,18 @@ void initializeMailbox(int sockfd)
 	    perror("recv");
 	    exit(1);
 	}
-	printf("\n%s\n", response);
+	//printf("\n%s\n", response);
+
+	string res = response;
+	smatch m;
+	regex regexp("AUTHENTICATIONFAILED");
+	if (regex_search(res, m, regexp) == 1){
+		printf("\nAuthentification Failed: Invalid username or password.\n\n");
+		exit(1);
+	}
+	else{
+		printf("\nAuthentification Successful.\n\n");
+	}
 
 	//look at emails
 	char command[MAXDATASIZE] = "tag2 SELECT INBOX EXISTS\n";
@@ -221,5 +232,10 @@ void initializeMailbox(int sockfd)
 	    perror("recv");
 	    exit(1);
 	}
-	printf("%s\n", response);
+	//printf("%s\n", response);
+
+	res = response;
+	regex regexp2("\\*\\s(\\d)\\sEXISTS");
+	regex_search(res, m, regexp2);
+	cout << "There are " << m[1] << " emails in your inbox."<< endl;
 }
