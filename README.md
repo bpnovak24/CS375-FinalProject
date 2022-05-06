@@ -32,4 +32,16 @@ This function is initialized if the user inputs `1` after the options menu is di
 
 ####  `ReadMessage(int sockfd)`
 
-This function returns a select amount of headers and the text of an email to the client. First, the function request which email, the client would like to read. It must choose the number identifier that is associated with the email. This identifier can be found in the output of `ViewMessages()`. Once the number is provided, the headers, `Subject`, `From`, and `Date` are returned and printed into the terminally gracefully using a `regex` expression. Afterwards, the following command is sent to the server: "tag4 FETCH *n* BODY\[TEXT]" where *n* is the identifier for an email. The text from the email is then printing gracefully using a `regex` expression. 
+This function prints a select amount of headers and the text of an email to the client. First, the function request which email, the client would like to read. It must choose the number identifier that is associated with the email. This identifier can be found in the output of `ViewMessages()`. Once the number is provided, the headers, `Subject`, `From`, and `Date` are returned and printed into the terminally gracefully using a `regex` expression. Afterwards, the following command is sent to the server: "tag4 FETCH *n* BODY\[TEXT]" where *n* is the identifier for an email. The text from the email is then printed gracefully using a `regex` expression. 
+
+####  `DeleteMessage(int sockfd)`
+
+This function runs if the user inputs `3` to indicate that they would like to delete a message.  Similarly to the `ReadMessage(int sockfd)`, the function asks the user which email ti delete. Once they input the corresponding number, the function sends a command to the server to flag the message for deletion. For the message to actually get deleted, a command to "EXPUNGE" must be sent. The response is then altered with `regex`, and the user is notified if the message was successfully deleted.
+
+####  `SearchSender(int sockfd)`
+
+When the function runs, the user is asked to input the name of the person they are searching for. For example, you can search `Olivia` to see any messages sent from `Olivia Strasburg`. The client sends a request to get messages sent from that person: "tag6 SEARCH FROM "Olivia\"". A string of indices that correspond to the messages from that user are then used to access relevant header information. Each number is used in a separate "FETCH" request, and the formatting of the response is edited like in the `ViewMessages(int sockfd)`.  All emails listed should be from someone whose first or last name is equivalent to the input message.
+
+####  `SearchDate(int sockfd)`
+
+The functionality of this function is essentially identical to that of `SearchSender()`. However, the client sends a message to search by the date: "tag7 SEARCH ON `date`", where date follows specific formatting. The user must input the date with the two-digit date, a dash, the first three letters of the month, a dash, and the full year.
